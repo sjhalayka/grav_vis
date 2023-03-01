@@ -31,12 +31,17 @@ int main(int argc, char **argv)
 
 	cout << points.size() << endl;
 
-	convert_points_to_triangles(points, 1.0f, res, grid_min, grid_max, triangles);
+	triangles.resize(1);
+	face_normals.resize(1);
+	vertices.resize(1);
+	vertex_normals.resize(1);
 
-	//scale_mesh(triangles, 2.0f);
+	convert_points_to_triangles(points, 1.0f, res, grid_min, grid_max, triangles[0]);
 
-	get_vertices_and_normals_from_triangles(triangles, face_normals, vertices, vertex_normals);	
+	get_vertices_and_normals_from_triangles(triangles[0], face_normals[0], vertices[0], vertex_normals[0]);
 	
+
+
 	glutInit(&argc, argv);
 	init_opengl(win_x, win_y);
 	glutReshapeFunc(reshape_func);
@@ -141,7 +146,6 @@ void draw_objects(void)
 
 	glTranslatef(camera_x_transform, camera_y_transform, 0);
 
-	// Could probably stand to use a VBO here.
 	if(true == draw_mesh)
 	{
 		glDisable(GL_CULL_FACE);
@@ -150,35 +154,27 @@ void draw_objects(void)
 
 		for(size_t i = 0; i < triangles.size(); i++)
 		{
-			if(1)//true == smooth_shading)
+			for (size_t j = 0; j < triangles[i].size(); j++)
 			{
-				size_t v_index0 = triangles[i].vertex[0].index;
-				size_t v_index1 = triangles[i].vertex[1].index;
-				size_t v_index2 = triangles[i].vertex[2].index;
+				size_t v_index0 = triangles[i][j].vertex[0].index;
+				size_t v_index1 = triangles[i][j].vertex[1].index;
+				size_t v_index2 = triangles[i][j].vertex[2].index;
 
-				if(vertices[v_index0].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
+				if (vertices[i][v_index0].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
 					continue;
 
-				if (vertices[v_index1].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
+				if (vertices[i][v_index1].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
 					continue;
 
-				if (vertices[v_index2].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
+				if (vertices[i][v_index2].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
 					continue;
 
-
-				glNormal3f(vertex_normals[v_index0].x, vertex_normals[v_index0].y, vertex_normals[v_index0].z);
-				glVertex3f(vertices[v_index0].x , vertices[v_index0].y, vertices[v_index0].z);
-				glNormal3f(vertex_normals[v_index1].x, vertex_normals[v_index1].y, vertex_normals[v_index1].z);
-				glVertex3f(vertices[v_index1].x , vertices[v_index1].y, vertices[v_index1].z);
-				glNormal3f(vertex_normals[v_index2].x, vertex_normals[v_index2].y, vertex_normals[v_index2].z);
-				glVertex3f(vertices[v_index2].x , vertices[v_index2].y, vertices[v_index2].z);
-			}
-			else
-			{
-				glNormal3f(face_normals[i].x, face_normals[i].y, face_normals[i].z);
-				glVertex3f(triangles[i].vertex[0].x , triangles[i].vertex[0].y, triangles[i].vertex[0].z);
-				glVertex3f(triangles[i].vertex[1].x , triangles[i].vertex[1].y, triangles[i].vertex[1].z);
-				glVertex3f(triangles[i].vertex[2].x , triangles[i].vertex[2].y, triangles[i].vertex[2].z);
+				glNormal3f(vertex_normals[i][v_index0].x, vertex_normals[i][v_index0].y, vertex_normals[i][v_index0].z);
+				glVertex3f(vertices[i][v_index0].x, vertices[i][v_index0].y, vertices[i][v_index0].z);
+				glNormal3f(vertex_normals[i][v_index1].x, vertex_normals[i][v_index1].y, vertex_normals[i][v_index1].z);
+				glVertex3f(vertices[i][v_index1].x, vertices[i][v_index1].y, vertices[i][v_index1].z);
+				glNormal3f(vertex_normals[i][v_index2].x, vertex_normals[i][v_index2].y, vertex_normals[i][v_index2].z);
+				glVertex3f(vertices[i][v_index2].x, vertices[i][v_index2].y, vertices[i][v_index2].z);
 			}
 		}
 
@@ -303,31 +299,7 @@ void keyboard_func(unsigned char key, int x, int y)
 {
 	switch(tolower(key))
 	{
-	case 'a':
-		{
-			output_to_mesh2();
-			break;
-		}
-	case 'q':
-		{
-			draw_mesh = !draw_mesh;
-			break;
-		}
-	case 'w':
-		{
-			draw_axis = !draw_axis;
-			break;
-		}
-	case 'e':
-		{
-			draw_control_list = !draw_control_list;
-			break;
-		}
-	case 's':
-		{
-			smooth_shading = !smooth_shading;
-			break;
-		}
+
 	case 'u':
 		{
 			main_camera.u -= u_spacer;
@@ -418,22 +390,5 @@ void passive_motion_func(int x, int y)
 	mouse_y = y;
 }
 
-void output_to_mesh2(void)
-{
-	ofstream out("out.mesh2.txt");
-
-	out << "mesh2 {" << endl;
-	out << "vertex_vectors {" << endl;	
-	out << vertices.size() << "," << endl;
-
-	for(size_t i = 0; i < vertices.size() - 1; i++)
-		out << "<" << vertices[i].x << "," << vertices[i].y << "," << vertices[i].z << ">," << endl;
-
-	out << "<" << vertices[vertices.size() - 1].x << "," << vertices[vertices.size() - 1].y << "," << vertices[vertices.size() - 1].z << ">" << endl;
-	out << "}" << endl;
-
-	out << "face_indices {" << endl;
-	out << triangles.size() << "," << endl;
-}
 
 

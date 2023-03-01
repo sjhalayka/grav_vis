@@ -27,15 +27,15 @@ void keyboard_func(unsigned char key, int x, int y);
 void mouse_func(int button, int state, int x, int y);
 void motion_func(int x, int y);
 void passive_motion_func(int x, int y);
-void output_to_mesh2(void);
+
 
 void render_string(int x, const int y, void *font, const string &text);
 void draw_objects(void);
 
-vector<triangle> triangles;
-vector<vertex_3> face_normals;
-vector<vertex_3> vertices;
-vector<vertex_3> vertex_normals;
+vector<vector<triangle>> triangles;
+vector<vector<vertex_3>> face_normals;
+vector<vector<vertex_3>> vertices;
+vector<vector<vertex_3>> vertex_normals;
 
 vertex_3 background_colour(0.0f, 0.0f, 0.0f);
 vertex_3 control_list_colour(0.9f, 0.9f, 0.9f);
