@@ -160,13 +160,13 @@ void draw_objects(void)
 				size_t v_index1 = triangles[i][j].vertex[1].index;
 				size_t v_index2 = triangles[i][j].vertex[2].index;
 
-				if (vertices[i][v_index0].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
+				if (vertices[i][v_index0].z > 0.0)
 					continue;
 
-				if (vertices[i][v_index1].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
+				if (vertices[i][v_index1].z > 0.0)
 					continue;
 
-				if (vertices[i][v_index2].z > 0.0)// || vertices[v_index0].y < 0.0 || vertices[v_index0].z < 0.0)
+				if (vertices[i][v_index2].z > 0.0)
 					continue;
 
 				glNormal3f(vertex_normals[i][v_index0].x, vertex_normals[i][v_index0].y, vertex_normals[i][v_index0].z);
