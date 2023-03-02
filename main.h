@@ -32,6 +32,8 @@ void passive_motion_func(int x, int y);
 void render_string(int x, const int y, void *font, const string &text);
 void draw_objects(void);
 
+vector<vertex_3> points;
+
 vector<vector<triangle>> triangles;
 vector<vector<vertex_3>> face_normals;
 vector<vector<vertex_3>> vertices;

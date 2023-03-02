@@ -1,5 +1,5 @@
 #include "main.h"
-#include "mesh.h"
+
 
 
 int main(int argc, char **argv)
@@ -9,7 +9,6 @@ int main(int argc, char **argv)
 	size_t res = 100;
 
 
-	vector<vertex_3> points;
 
 	ifstream in_file("points.txt");
 	string line;
@@ -32,14 +31,16 @@ int main(int argc, char **argv)
 	cout << points.size() << endl;
 
 	triangles.resize(1);
-	face_normals.resize(1);
-	vertices.resize(1);
-	vertex_normals.resize(1);
 
-	convert_points_to_triangles(points, 1.0f, res, grid_min, grid_max, triangles[0]);
+	face_normals.resize(triangles.size());
+	vertices.resize(triangles.size());
+	vertex_normals.resize(triangles.size());
 
-	get_vertices_and_normals_from_triangles(triangles[0], face_normals[0], vertices[0], vertex_normals[0]);
-	
+	for (size_t i = 0; i < triangles.size(); i++)
+	{
+		convert_points_to_triangles(points, 1.0f, res, grid_min, grid_max, triangles[i]);
+		get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
+	}
 
 
 	glutInit(&argc, argv);
@@ -146,6 +147,12 @@ void draw_objects(void)
 
 	glTranslatef(camera_x_transform, camera_y_transform, 0);
 
+	glPushMatrix();
+
+	static const float pi = 4.0 * atanf(1.0f);
+
+	glRotatef(270, 0, 1, 0);
+
 	if(true == draw_mesh)
 	{
 		glDisable(GL_CULL_FACE);
@@ -160,13 +167,7 @@ void draw_objects(void)
 				size_t v_index1 = triangles[i][j].vertex[1].index;
 				size_t v_index2 = triangles[i][j].vertex[2].index;
 
-				if (vertices[i][v_index0].z > 0.0)
-					continue;
-
-				if (vertices[i][v_index1].z > 0.0)
-					continue;
-
-				if (vertices[i][v_index2].z > 0.0)
+				if (vertices[i][v_index0].z > 0.0 && vertices[i][v_index1].z > 0.0 && vertices[i][v_index2].z > 0.0)
 					continue;
 
 				glNormal3f(vertex_normals[i][v_index0].x, vertex_normals[i][v_index0].y, vertex_normals[i][v_index0].z);
@@ -181,7 +182,31 @@ void draw_objects(void)
 		glEnd();
 	}
 
+
+	glPopMatrix();
+
+
 	glDisable(GL_LIGHTING);
+
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glPointSize(1.0f);
+
+	glBegin(GL_POINTS);
+
+	glColor4f(1, 0.5f, 0, 0.1f);
+
+	for (size_t i = 0; i < points.size(); i++)
+		glVertex3f(-points[i].x, points[i].y, points[i].z);
+
+	glEnd();
+
+	glDisable(GL_BLEND);
+
+
+
 
 	// If we do draw the axis at all, make sure not to draw its outline.
 	if(true == draw_axis)
