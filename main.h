@@ -27,12 +27,46 @@ void keyboard_func(unsigned char key, int x, int y);
 void mouse_func(int button, int state, int x, int y);
 void motion_func(int x, int y);
 void passive_motion_func(int x, int y);
-
-
 void render_string(int x, const int y, void *font, const string &text);
 void draw_objects(void);
 
-vector<vertex_3> points;
+class graviton
+{
+public:
+	vertex_3 pos;
+	vertex_3 vel;
+};
+
+vector<graviton> gravitons;
+
+const float mass = 100;
+
+const float pi = 4.0f * atanf(1.0f);
+
+const float c = 2;
+const float c2 = c * c;
+const float c3 = c * c * c;
+const float c4 = c * c * c * c;
+const float c5 = c * c * c * c * c;
+
+const float G = 1 / 10.0f;
+const float hbar = 1 / 10.0f;
+
+const float lp = sqrtf(hbar * G / c3);
+const float lp2 = lp * lp;
+
+const float tp = sqrt(hbar * G / c5);
+
+const float steps_per_second = c / lp;
+
+const float Rs = 2 * G * mass / c2;
+const float As = 4 * pi * Rs * Rs;
+const float n = As / (4 * lp2);
+
+
+
+
+
 
 vector<vector<triangle>> triangles;
 vector<vector<vertex_3>> face_normals;
@@ -44,7 +78,7 @@ vertex_3 control_list_colour(0.9f, 0.9f, 0.9f);
 
 
 
-const static float pi = 4.0f * atanf(1.0f);
+
 
 
 bool draw_mesh = true;
@@ -184,7 +218,7 @@ void tesselate_field(const vector<float>& values, vector<triangle>& triangle_lis
 
 
 
-void convert_points_to_triangles(const vector<vertex_3>& points,
+void convert_points_to_triangles(const vector<graviton>& gravitons,
 	float isovalue,
 	size_t res,
 	float grid_min, float grid_max,
@@ -204,21 +238,21 @@ void convert_points_to_triangles(const vector<vertex_3>& points,
 	float y_extent = curr_y_max - curr_y_min;
 	float z_extent = curr_z_max - curr_z_min;
 
-	for (size_t i = 0; i < points.size(); i++)
+	for (size_t i = 0; i < gravitons.size(); i++)
 	{
-		float x_location = points[i].x - curr_x_min;
+		float x_location = gravitons[i].pos.x - curr_x_min;
 		size_t x_index = static_cast<size_t>(static_cast<double>(res) * (x_location / x_extent));
 
 		if (x_index >= res)
 			x_index = res - 1;
 
-		float y_location = points[i].y - curr_y_min;
+		float y_location = gravitons[i].pos.y - curr_y_min;
 		size_t y_index = static_cast<size_t>(static_cast<double>(res) * (y_location / y_extent));
 
 		if (y_index >= res)
 			y_index = res - 1;
 
-		float z_location = points[i].z - curr_z_min;
+		float z_location = gravitons[i].pos.z - curr_z_min;
 		size_t z_index = static_cast<size_t>(static_cast<double>(res) * (z_location / z_extent));
 
 		if (z_index >= res)

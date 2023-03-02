@@ -1,13 +1,29 @@
 #include "main.h"
 
 
+vertex_3 get_point_on_sphere(float radius)
+{
+	double u = rand() / static_cast<double>(RAND_MAX);
+	double v = rand() / static_cast<double>(RAND_MAX);
+
+	double theta = 2 * pi * u;
+	double phi = acos(2 * v - 1.0);
+
+	vertex_3 pos;
+
+	pos.x = radius * cos(theta) * sin(phi);
+	pos.y = radius * sin(theta) * sin(phi);
+	pos.z = radius * cos(phi);
+
+	return pos;
+}
+
 
 int main(int argc, char **argv)
 {
 	float grid_min = -1.5;
 	float grid_max = 1.5;
 	size_t res = 100;
-
 
 	for (size_t i = 0; i < 100000; i++)
 	{
@@ -17,18 +33,26 @@ int main(int argc, char **argv)
 		double theta = 2 * pi * u;
 		double phi = acos(2 * v - 1.0);
 
-		vertex_3 pos;
+		graviton g;
 
-		pos.x = cos(theta) * sin(phi);
-		pos.y = sin(theta) * sin(phi);
-		pos.z = cos(phi);
+		g.pos = get_point_on_sphere(1.0f);
+		g.vel = get_point_on_sphere(1.0f);
 
-		points.push_back(pos);
+		if (g.pos.dot(g.vel) < 0)
+		{
+			g.vel.x = -g.vel.x;
+			g.vel.y = -g.vel.y;
+			g.vel.z = -g.vel.z;
+		}
+
+		gravitons.push_back(g);
 	}
 
 
 
-	cout << points.size() << endl;
+	cout << Rs << " " << As << " " << n << " " << tp << endl;
+
+
 
 	triangles.resize(1);
 
@@ -38,10 +62,8 @@ int main(int argc, char **argv)
 
 	for (size_t i = 0; i < triangles.size(); i++)
 	{
-		convert_points_to_triangles(points, 1.0f, res, grid_min, grid_max, triangles[i]);
+		convert_points_to_triangles(gravitons, 1.0f, res, grid_min, grid_max, triangles[i]);
 		get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
-	
-		cout << triangles[i].size() << endl;
 	}
 
 
@@ -67,6 +89,9 @@ int main(int argc, char **argv)
 
 void idle_func(void)
 {
+	// move gravitons
+
+
 	glutPostRedisplay();
 }
 
@@ -202,8 +227,8 @@ void draw_objects(void)
 
 	glColor4f(1, 0.5f, 0, 0.1f);
 
-	for (size_t i = 0; i < points.size(); i++)
-		glVertex3f(-points[i].x, points[i].y, points[i].z);
+	for (size_t i = 0; i < gravitons.size(); i++)
+		glVertex3f(-gravitons[i].pos.x, gravitons[i].pos.y, gravitons[i].pos.z);
 
 	glEnd();
 
@@ -328,6 +353,14 @@ void keyboard_func(unsigned char key, int x, int y)
 {
 	switch(tolower(key))
 	{
+	case 'a':
+		{
+			float dt = 0.01;
+		
+			//proceed(dt);
+
+			break;
+		}
 
 	case 'u':
 		{
