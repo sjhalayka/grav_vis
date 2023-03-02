@@ -9,24 +9,24 @@ int main(int argc, char **argv)
 	size_t res = 100;
 
 
-
-	ifstream in_file("points.txt");
-	string line;
-
-	while (getline(in_file, line))
+	for (size_t i = 0; i < 100000; i++)
 	{
-		if (line == "")
-			continue;
+		double u = rand() / static_cast<double>(RAND_MAX);
+		double v = rand() / static_cast<double>(RAND_MAX);
 
-		istringstream iss(line);
+		double theta = 2 * pi * u;
+		double phi = acos(2 * v - 1.0);
 
-		vertex_3 v;
-		iss >> v.x;
-		iss >> v.y;
-		iss >> v.z;
+		vertex_3 pos;
 
-		points.push_back(v);
+		pos.x = cos(theta) * sin(phi);
+		pos.y = sin(theta) * sin(phi);
+		pos.z = cos(phi);
+
+		points.push_back(pos);
 	}
+
+
 
 	cout << points.size() << endl;
 
@@ -40,7 +40,11 @@ int main(int argc, char **argv)
 	{
 		convert_points_to_triangles(points, 1.0f, res, grid_min, grid_max, triangles[i]);
 		get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
+	
+		cout << triangles[i].size() << endl;
 	}
+
+
 
 
 	glutInit(&argc, argv);

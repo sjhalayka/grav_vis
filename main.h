@@ -42,6 +42,11 @@ vector<vector<vertex_3>> vertex_normals;
 vertex_3 background_colour(0.0f, 0.0f, 0.0f);
 vertex_3 control_list_colour(0.9f, 0.9f, 0.9f);
 
+
+
+const static float pi = 4.0f * atanf(1.0f);
+
+
 bool draw_mesh = true;
 bool draw_axis = true;
 bool draw_control_list = true;
@@ -180,7 +185,7 @@ void tesselate_field(const vector<float>& values, vector<triangle>& triangle_lis
 
 
 void convert_points_to_triangles(const vector<vertex_3>& points,
-	float normalized_isovalue,
+	float isovalue,
 	size_t res,
 	float grid_min, float grid_max,
 	vector<triangle>& triangles)
@@ -226,15 +231,5 @@ void convert_points_to_triangles(const vector<vertex_3>& points,
 		field[index] += 1;
 	}
 
-	// Normalize the data
-	float max_val = 0;
-
-	for (size_t i = 0; i < field.size(); i++)
-		if (field[i] > max_val)
-			max_val = field[i];
-
-	for (size_t i = 0; i < field.size(); i++)
-		field[i] /= max_val;
-
-	tesselate_field(field, triangles, normalized_isovalue, grid_min, grid_max, res);
+	tesselate_field(field, triangles, isovalue, grid_min, grid_max, res);
 }
