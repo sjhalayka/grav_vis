@@ -43,7 +43,7 @@ const float mass = 100;
 
 const float pi = 4.0f * atanf(1.0f);
 
-const float c = 2;
+const float c = 4;
 const float c2 = c * c;
 const float c3 = c * c * c;
 const float c4 = c * c * c * c;
@@ -63,7 +63,9 @@ const float Rs = 2 * G * mass / c2;
 const float As = 4 * pi * Rs * Rs;
 const float n = As / (4 * lp2);
 
-
+float grid_min = -10.0;
+float grid_max = 10.0;
+size_t res = 500;
 
 
 
@@ -266,4 +268,80 @@ void convert_points_to_triangles(const vector<graviton>& gravitons,
 	}
 
 	tesselate_field(field, triangles, isovalue, grid_min, grid_max, res);
+}
+
+
+
+vertex_3 get_point_on_sphere(float radius)
+{
+	double u = rand() / static_cast<double>(RAND_MAX);
+	double v = rand() / static_cast<double>(RAND_MAX);
+
+	double theta = 2 * pi * u;
+	double phi = acos(2 * v - 1.0);
+
+	vertex_3 pos;
+
+	pos.x = radius * cos(theta) * sin(phi);
+	pos.y = radius * sin(theta) * sin(phi);
+	pos.z = radius * cos(phi);
+
+	return pos;
+}
+
+void proceed(const float dt)
+{
+	// move gravitons
+	for (size_t i = 0; i < gravitons.size(); i++)
+		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * dt;
+
+	// kill gravitons outside of the AABB
+	for (size_t i = 0; i < gravitons.size(); i++)
+	{
+		if (gravitons[i].pos.x < grid_min || gravitons[i].pos.x > grid_max ||
+			gravitons[i].pos.y < grid_min || gravitons[i].pos.y > grid_max ||
+			gravitons[i].pos.z < grid_min || gravitons[i].pos.z > grid_max)
+		{
+			// Do a swap n pop here
+			gravitons.erase(gravitons.begin() + i);
+			i = 0;
+		}
+	}
+
+	// n oscillators emit n gravitons
+	for (size_t i = 0; i < n; i++)
+	{
+		double u = rand() / static_cast<double>(RAND_MAX);
+		double v = rand() / static_cast<double>(RAND_MAX);
+
+		double theta = 2 * pi * u;
+		double phi = acos(2 * v - 1.0);
+
+		graviton g;
+
+		g.pos = get_point_on_sphere(Rs);
+		g.vel = get_point_on_sphere(c);
+
+		if (g.pos.dot(g.vel) < 0)
+		{
+			g.vel.x = -g.vel.x;
+			g.vel.y = -g.vel.y;
+			g.vel.z = -g.vel.z;
+		}
+
+		gravitons.push_back(g);
+	}
+
+
+	triangles.resize(1);
+
+	face_normals.resize(triangles.size());
+	vertices.resize(triangles.size());
+	vertex_normals.resize(triangles.size());
+
+	for (size_t i = 0; i < triangles.size(); i++)
+	{
+		convert_points_to_triangles(gravitons, 1.0f, res, grid_min, grid_max, triangles[i]);
+		get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
+	}
 }

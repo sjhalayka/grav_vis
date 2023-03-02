@@ -1,74 +1,10 @@
 #include "main.h"
 
 
-vertex_3 get_point_on_sphere(float radius)
-{
-	double u = rand() / static_cast<double>(RAND_MAX);
-	double v = rand() / static_cast<double>(RAND_MAX);
-
-	double theta = 2 * pi * u;
-	double phi = acos(2 * v - 1.0);
-
-	vertex_3 pos;
-
-	pos.x = radius * cos(theta) * sin(phi);
-	pos.y = radius * sin(theta) * sin(phi);
-	pos.z = radius * cos(phi);
-
-	return pos;
-}
 
 
 int main(int argc, char **argv)
 {
-	float grid_min = -1.5;
-	float grid_max = 1.5;
-	size_t res = 100;
-
-	for (size_t i = 0; i < 100000; i++)
-	{
-		double u = rand() / static_cast<double>(RAND_MAX);
-		double v = rand() / static_cast<double>(RAND_MAX);
-
-		double theta = 2 * pi * u;
-		double phi = acos(2 * v - 1.0);
-
-		graviton g;
-
-		g.pos = get_point_on_sphere(1.0f);
-		g.vel = get_point_on_sphere(1.0f);
-
-		if (g.pos.dot(g.vel) < 0)
-		{
-			g.vel.x = -g.vel.x;
-			g.vel.y = -g.vel.y;
-			g.vel.z = -g.vel.z;
-		}
-
-		gravitons.push_back(g);
-	}
-
-
-
-	cout << Rs << " " << As << " " << n << " " << tp << endl;
-
-
-
-	triangles.resize(1);
-
-	face_normals.resize(triangles.size());
-	vertices.resize(triangles.size());
-	vertex_normals.resize(triangles.size());
-
-	for (size_t i = 0; i < triangles.size(); i++)
-	{
-		convert_points_to_triangles(gravitons, 1.0f, res, grid_min, grid_max, triangles[i]);
-		get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
-	}
-
-
-
-
 	glutInit(&argc, argv);
 	init_opengl(win_x, win_y);
 	glutReshapeFunc(reshape_func);
@@ -89,9 +25,6 @@ int main(int argc, char **argv)
 
 void idle_func(void)
 {
-	// move gravitons
-
-
 	glutPostRedisplay();
 }
 
@@ -322,8 +255,6 @@ void display_func(void)
 		render_string(10, start + 10*break_size, GLUT_BITMAP_HELVETICA_18, string("  i: Rotate camera -u"));
 		render_string(10, start + 11*break_size, GLUT_BITMAP_HELVETICA_18, string("  o: Rotate camera +v"));
 		render_string(10, start + 12*break_size, GLUT_BITMAP_HELVETICA_18, string("  p: Rotate camera -v"));
-
-
 		
 		vertex_3 eye = main_camera.eye;
 		vertex_3 eye_norm = eye;
@@ -355,10 +286,7 @@ void keyboard_func(unsigned char key, int x, int y)
 	{
 	case 'a':
 		{
-			float dt = 0.01;
-		
-			//proceed(dt);
-
+			proceed(tp);
 			break;
 		}
 
