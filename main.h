@@ -43,7 +43,7 @@ const float mass = 100;
 
 const float pi = 4.0f * atanf(1.0f);
 
-const float c = 4;
+const float c = 10;
 const float c2 = c * c;
 const float c3 = c * c * c;
 const float c4 = c * c * c * c;
@@ -55,17 +55,25 @@ const float hbar = 1 / 10.0f;
 const float lp = sqrtf(hbar * G / c3);
 const float lp2 = lp * lp;
 
+const float Mp = sqrt(hbar*c/G);
+const float Mp2 = Mp * Mp;
+
+
 const float tp = sqrt(hbar * G / c5);
 
 const float steps_per_second = c / lp;
 
 const float Rs = 2 * G * mass / c2;
 const float As = 4 * pi * Rs * Rs;
-const float n = As / (4 * lp2);
+//const float n = As / (4 * lp2 * logf(2.0f));
+const float n = 4 * pi * mass * mass / (logf(2.0f) * Mp2);
 
-float grid_min = -10.0;
-float grid_max = 10.0;
-size_t res = 500;
+
+
+
+float grid_min = -1.5;
+float grid_max = 1.5;
+size_t res = 100;
 
 
 
@@ -289,26 +297,15 @@ vertex_3 get_point_on_sphere(float radius)
 	return pos;
 }
 
-void proceed(const float dt)
+void proceed(void)
 {
+	const float dt = tp;
+
 	// move gravitons
 	for (size_t i = 0; i < gravitons.size(); i++)
 		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * dt;
 
-	// kill gravitons outside of the AABB
-	for (size_t i = 0; i < gravitons.size(); i++)
-	{
-		if (gravitons[i].pos.x < grid_min || gravitons[i].pos.x > grid_max ||
-			gravitons[i].pos.y < grid_min || gravitons[i].pos.y > grid_max ||
-			gravitons[i].pos.z < grid_min || gravitons[i].pos.z > grid_max)
-		{
-			// Do a swap n pop here
-			gravitons.erase(gravitons.begin() + i);
-			i = 0;
-		}
-	}
-
-	// n oscillators emit n gravitons
+	// n oscillators emit n gravitons, once per planck time
 	for (size_t i = 0; i < n; i++)
 	{
 		double u = rand() / static_cast<double>(RAND_MAX);
@@ -329,19 +326,49 @@ void proceed(const float dt)
 			g.vel.z = -g.vel.z;
 		}
 
+		g.pos.x += 1.0f;
+
 		gravitons.push_back(g);
 	}
 
-
-	triangles.resize(1);
-
-	face_normals.resize(triangles.size());
-	vertices.resize(triangles.size());
-	vertex_normals.resize(triangles.size());
-
-	for (size_t i = 0; i < triangles.size(); i++)
+	for (size_t i = 0; i < n; i++)
 	{
-		convert_points_to_triangles(gravitons, 1.0f, res, grid_min, grid_max, triangles[i]);
-		get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
+		double u = rand() / static_cast<double>(RAND_MAX);
+		double v = rand() / static_cast<double>(RAND_MAX);
+
+		double theta = 2 * pi * u;
+		double phi = acos(2 * v - 1.0);
+
+		graviton g;
+
+		g.pos = get_point_on_sphere(Rs);
+		g.vel = get_point_on_sphere(c);
+
+		if (g.pos.dot(g.vel) < 0)
+		{
+			g.vel.x = -g.vel.x;
+			g.vel.y = -g.vel.y;
+			g.vel.z = -g.vel.z;
+		}
+
+		g.pos.x -= 1.0f;
+
+		gravitons.push_back(g);
 	}
+
+	for (vector<graviton>::const_iterator ci = gravitons.begin(); ci != gravitons.end(); )
+	{
+		const vertex_3 p = ci->pos;
+
+		if (p.x < grid_min || p.x > grid_max ||
+			p.y < grid_min || p.y > grid_max ||
+			p.z < grid_min || p.z > grid_max)
+		{
+			gravitons.erase(ci);
+			ci = gravitons.begin();
+		}
+		else
+			ci++;
+	}
+
 }

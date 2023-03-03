@@ -5,6 +5,8 @@
 
 int main(int argc, char **argv)
 {
+	cout << tp << " " << lp2 << " " << Rs << " " << As << " " << n << endl;
+
 	glutInit(&argc, argv);
 	init_opengl(win_x, win_y);
 	glutReshapeFunc(reshape_func);
@@ -286,9 +288,27 @@ void keyboard_func(unsigned char key, int x, int y)
 	{
 	case 'a':
 		{
-			proceed(tp);
+			proceed();
 			break;
 		}
+
+	case 's':
+	{
+		triangles.resize(1);
+
+		face_normals.resize(triangles.size());
+		vertices.resize(triangles.size());
+		vertex_normals.resize(triangles.size());
+
+		for (size_t i = 0; i < triangles.size(); i++)
+		{
+			convert_points_to_triangles(gravitons, 1.0f, res, grid_min, grid_max, triangles[i]);
+			get_vertices_and_normals_from_triangles(triangles[i], face_normals[i], vertices[i], vertex_normals[i]);
+		}
+
+		break;
+	}
+
 
 	case 'u':
 		{
