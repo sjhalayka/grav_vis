@@ -18,6 +18,9 @@ using std::string;
 using std::ostringstream;
 using std::istringstream;
 
+#include <algorithm>
+using std::swap;
+
 
 void idle_func(void);
 void init_opengl(const int &width, const int &height);
@@ -73,7 +76,7 @@ const float n = 4 * pi * mass * mass / (logf(2.0f) * Mp2);
 
 float grid_min = -1.5;
 float grid_max = 1.5;
-size_t res = 100;
+size_t res = 50;
 
 
 
@@ -129,6 +132,8 @@ void tesselate_field(const vector<float>& values, vector<triangle>& triangle_lis
 
 	for (size_t x = 0; x < res - 1; x++)
 	{
+		cout << x << endl;
+
 		for (size_t y = 0; y < res - 1; y++)
 		{
 			for (size_t z = 0; z < res - 1; z++)
@@ -227,6 +232,46 @@ void tesselate_field(const vector<float>& values, vector<triangle>& triangle_lis
 
 
 
+void blur_field(vector<float>& input_field, size_t res)
+{
+	vector<float> field(res * res * res);
+
+	for (size_t i = 1; i < res - 1; i++)
+	{
+		for (size_t j = 1; j < res - 1; j++)
+		{
+			for (size_t k = 1; k < res - 1; k++)
+			{
+				float sum = 0;
+
+				for (signed char l = -1; l <= 1; l++)
+				{
+					for (signed char m = -1; m <= 1; m++)
+					{
+						for (signed char n = -1; n <= 1; n++)
+						{
+							size_t index = (k + n) * res * res;
+							index += (j + m) * res;
+							index += (i + l);
+
+							sum += input_field[index];
+						}
+					}
+				}
+
+				size_t centre_index = k * res * res;
+				centre_index += j * res;
+				centre_index += i;
+
+				field[centre_index] = sum / 27.0f;
+			}
+		}
+	}
+
+	input_field = field;
+}
+
+
 
 void convert_points_to_triangles(const vector<graviton>& gravitons,
 	float isovalue,
@@ -275,6 +320,8 @@ void convert_points_to_triangles(const vector<graviton>& gravitons,
 		field[index] += 1;
 	}
 
+	//blur_field(field, res);
+
 	tesselate_field(field, triangles, isovalue, grid_min, grid_max, res);
 }
 
@@ -305,8 +352,10 @@ void proceed(void)
 	for (size_t i = 0; i < gravitons.size(); i++)
 		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * dt;
 
+	size_t scale = 1;
+
 	// n oscillators emit n gravitons, once per planck time
-	for (size_t i = 0; i < n; i++)
+	for (size_t i = 0; i < n/scale; i++)
 	{
 		double u = rand() / static_cast<double>(RAND_MAX);
 		double v = rand() / static_cast<double>(RAND_MAX);
@@ -331,7 +380,7 @@ void proceed(void)
 		gravitons.push_back(g);
 	}
 
-	for (size_t i = 0; i < n; i++)
+	for (size_t i = 0; i < n/scale; i++)
 	{
 		double u = rand() / static_cast<double>(RAND_MAX);
 		double v = rand() / static_cast<double>(RAND_MAX);
@@ -356,19 +405,36 @@ void proceed(void)
 		gravitons.push_back(g);
 	}
 
-	for (vector<graviton>::const_iterator ci = gravitons.begin(); ci != gravitons.end(); )
+	//for (vector<graviton>::const_iterator ci = gravitons.begin(); ci != gravitons.end(); )
+	//{
+	//	const vertex_3 p = ci->pos;
+
+	//	if (p.x < grid_min || p.x > grid_max ||
+	//		p.y < grid_min || p.y > grid_max ||
+	//		p.z < grid_min || p.z > grid_max)
+	//	{
+	//		gravitons.erase(ci);
+	//		ci = gravitons.begin();
+	//	}
+	//	else
+	//		ci++;
+	//}
+
+
+	for (size_t i = 0; i < gravitons.size(); )
 	{
-		const vertex_3 p = ci->pos;
+		const vertex_3 p = gravitons[i].pos;
 
 		if (p.x < grid_min || p.x > grid_max ||
 			p.y < grid_min || p.y > grid_max ||
 			p.z < grid_min || p.z > grid_max)
 		{
-			gravitons.erase(ci);
-			ci = gravitons.begin();
+			// swap n pop
+			swap(gravitons[i], gravitons[gravitons.size() - 1]);
+			gravitons.pop_back();
+			i = 0;
 		}
 		else
-			ci++;
+			i++;
 	}
-
 }

@@ -131,7 +131,7 @@ void draw_objects(void)
 				size_t v_index1 = triangles[i][j].vertex[1].index;
 				size_t v_index2 = triangles[i][j].vertex[2].index;
 
-				if (vertices[i][v_index0].z > 0.0 && vertices[i][v_index1].z > 0.0 && vertices[i][v_index2].z > 0.0)
+				if (vertices[i][v_index0].x > 0.0 && vertices[i][v_index1].x > 0.0 && vertices[i][v_index2].x > 0.0)
 					continue;
 
 				glNormal3f(vertex_normals[i][v_index0].x, vertex_normals[i][v_index0].y, vertex_normals[i][v_index0].z);
@@ -160,7 +160,7 @@ void draw_objects(void)
 
 	glBegin(GL_POINTS);
 
-	glColor4f(1, 0.5f, 0, 0.1f);
+	glColor4f(1, 0.5f, 0, 0.5f);
 
 	for (size_t i = 0; i < gravitons.size(); i++)
 		glVertex3f(-gravitons[i].pos.x, gravitons[i].pos.y, gravitons[i].pos.z);
@@ -288,7 +288,12 @@ void keyboard_func(unsigned char key, int x, int y)
 	{
 	case 'a':
 		{
-			proceed();
+			//for (size_t i = 0; i < 100; i++)
+			//{
+			//	cout << i << endl;
+				proceed();
+//			}
+
 			break;
 		}
 
