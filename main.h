@@ -38,8 +38,29 @@ class graviton
 public:
 	vertex_3 pos;
 	vertex_3 vel;
-	float vel_multiplier = 1;
-	size_t index = 0;
+	float vel_multiplier;
+	size_t index;
+};
+
+
+class v3_pos
+{
+public:
+	vertex_3 pos;
+	float dist_to_camera;
+	float vel_multiplier;
+
+	bool operator<(const v3_pos& right) const
+	{
+		// sort in descending order!!!
+		if (right.dist_to_camera < dist_to_camera)
+			return true;
+		else if (right.dist_to_camera > dist_to_camera)
+			return false;
+
+		return false;
+	}
+
 };
 
 vector<graviton> gravitons;
@@ -344,9 +365,32 @@ void proceed(void)
 {
 	const float dt = tp;
 
+
+
+
+
+	//	 Cull gravitons that are outside of the bounding box
+	for (size_t i = 0; i < gravitons.size(); )
+	{
+		const vertex_3 p = gravitons[i].pos;
+
+		if (p.x < grid_min || p.x > grid_max ||
+			p.y < grid_min || p.y > grid_max ||
+			p.z < grid_min || p.z > grid_max)
+		{
+			// swap n pop
+			swap(gravitons[i], gravitons[gravitons.size() - 1]);
+			gravitons.pop_back();
+		}
+		else
+			i++;
+	}
+
+
 	// move gravitons
 	for (size_t i = 0; i < gravitons.size(); i++)
 		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * gravitons[i].vel_multiplier * dt;
+
 
 	// n oscillators emit n gravitons, once per planck time
 	for (size_t i = 0; i < n; i++)
@@ -361,6 +405,7 @@ void proceed(void)
 
 		g.pos = get_point_on_sphere(Rs);
 		g.vel = get_point_on_sphere(c);
+		g.vel_multiplier = 1;
 
 		if (g.pos.dot(g.vel) < 0)
 		{
@@ -386,6 +431,7 @@ void proceed(void)
 
 		g.pos = get_point_on_sphere(Rs);
 		g.vel = get_point_on_sphere(c);
+		g.vel_multiplier = 1;
 
 		if (g.pos.dot(g.vel) < 0)
 		{
@@ -401,22 +447,7 @@ void proceed(void)
 
 
 
-	// Cull gravitons that are outside of the bounding box
-	for (size_t i = 0; i < gravitons.size(); )
-	{
-		const vertex_3 p = gravitons[i].pos;
 
-		if (p.x < grid_min || p.x > grid_max ||
-			p.y < grid_min || p.y > grid_max ||
-			p.z < grid_min || p.z > grid_max)
-		{
-			// swap n pop
-			swap(gravitons[i], gravitons[gravitons.size() - 1]);
-			gravitons.pop_back();
-		}
-		else
-			i++;
-	}
 
 
 
@@ -463,29 +494,19 @@ void proceed(void)
 		gravitons[i].index = index;
 	}
 
-	float largest = 0;
-	float smallest = numeric_limits<float>::max();
-
 	const float max_gravitons_per_cell = c / lp;
 
 	for (size_t i = 0; i < field.size(); i++)
-	{
 		if (field[i] > max_gravitons_per_cell)
 			field[i] = max_gravitons_per_cell;
 
-		if (field[i] > largest)
-			largest = field[i];
-
-		if (field[i] < smallest)
-			smallest = field[i];
-	}
-
 	for (size_t i = 0; i < field.size(); i++)
-	{
-		if(largest != 0)
-			field[i] /= max_gravitons_per_cell;
-	}
+		field[i] /= max_gravitons_per_cell;
 
 	for (size_t i = 0; i < gravitons.size(); i++)
 		gravitons[i].vel_multiplier = 1.0f - field[gravitons[i].index];
+
+
+
+
 }

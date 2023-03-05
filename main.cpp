@@ -90,7 +90,6 @@ void render_string(int x, const int y, void *font, const string &text)
 
 void draw_objects(void)
 {
-	glEnable(GL_LIGHTING);
 
 	GLfloat ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 	GLfloat diffuse[] =	{ 0.75f, 0.75f, 0.75f, 1.0f };
@@ -110,6 +109,41 @@ void draw_objects(void)
 	glPushMatrix();
 
 	glTranslatef(camera_x_transform, camera_y_transform, 0);
+
+	glDisable(GL_LIGHTING);
+
+	// If we do draw the axis at all, make sure not to draw its outline.
+	if(true == draw_axis)
+	{
+		glLineWidth(1.0f);
+
+		glBegin(GL_LINES);
+
+		glColor3f(1, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(1, 0, 0);
+		glColor3f(0, 1, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 1, 0);
+		glColor3f(0, 0, 1);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, 1);
+
+		glColor3f(0.5, 0.5, 0.5);
+		glVertex3f(0, 0, 0);
+		glVertex3f(-1, 0, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, -1, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(0, 0, -1);
+
+		glEnd();
+	}
+
+
+
+	glEnable(GL_LIGHTING);
+
 
 	glPushMatrix();
 
@@ -150,54 +184,49 @@ void draw_objects(void)
 	glPopMatrix();
 
 
+
+
+
+
+
 	glDisable(GL_LIGHTING);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	v3_pos v;
+	vector<v3_pos> pos_vec(gravitons.size(), v);
+
+	for (size_t i = 0; i < pos_vec.size(); i++)
+	{
+		pos_vec[i].pos = gravitons[i].pos;
+		pos_vec[i].vel_multiplier = gravitons[i].vel_multiplier;
+
+		vertex_3 cam_vertex3 = pos_vec[i].pos - main_camera.eye;
+		pos_vec[i].dist_to_camera = cam_vertex3.length();
+	}
+
+	sort(pos_vec.begin(), pos_vec.end());
+
 	glPointSize(1.0f);
 
 	glBegin(GL_POINTS);
 
-	for (size_t i = 0; i < gravitons.size(); i++)
+	for (size_t i = 0; i < pos_vec.size(); i++)
 	{
-		glColor4f(gravitons[i].vel.length() * gravitons[i].vel_multiplier / c, 0.5f, 1.0f - gravitons[i].vel.length() * gravitons[i].vel_multiplier / c, 1.0f - gravitons[i].vel.length() * gravitons[i].vel_multiplier / c);
-		glVertex3f(-gravitons[i].pos.x, gravitons[i].pos.y, gravitons[i].pos.z);
+		const vertex_3 p = pos_vec[i].pos;
+		
+		if (p.z > 0)
+			continue;
+
+		float x = pos_vec[i].vel_multiplier;
+		float y = powf(x, 10.0f);
+
+		glColor4f(y, 0.5f, 1.0f - y, 1.0f - x);
+		glVertex3f(pos_vec[i].pos.x, pos_vec[i].pos.y, pos_vec[i].pos.z);
 	}
 
 	glEnd();
-
-
-
-
-
-	// If we do draw the axis at all, make sure not to draw its outline.
-	if(true == draw_axis)
-	{
-		glLineWidth(1.0f);
-
-		glBegin(GL_LINES);
-
-		glColor3f(1, 0, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(1, 0, 0);
-		glColor3f(0, 1, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(0, 1, 0);
-		glColor3f(0, 0, 1);
-		glVertex3f(0, 0, 0);
-		glVertex3f(0, 0, 1);
-
-		glColor3f(0.5, 0.5, 0.5);
-		glVertex3f(0, 0, 0);
-		glVertex3f(-1, 0, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(0, -1, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(0, 0, -1);
-
-		glEnd();
-	}
 
 	glDisable(GL_BLEND);
 	
@@ -289,11 +318,11 @@ void keyboard_func(unsigned char key, int x, int y)
 	{
 	case 'a':
 		{
-			//for (size_t i = 0; i < 100; i++)
-			//{
-			//	cout << i << endl;
+			for (size_t i = 0; i < 100; i++)
+			{
+				cout << i << endl;
 				proceed();
-//			}
+			}
 
 			break;
 		}
