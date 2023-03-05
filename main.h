@@ -38,6 +38,8 @@ class graviton
 public:
 	vertex_3 pos;
 	vertex_3 vel;
+	float vel_multiplier = 1;
+	size_t index = 0;
 };
 
 vector<graviton> gravitons;
@@ -76,9 +78,7 @@ const float n = 4 * pi * mass * mass / (logf(2.0f) * Mp2);
 
 float grid_min = -1.5;
 float grid_max = 1.5;
-size_t res = 50;
-
-
+size_t res = 100;
 
 
 vector<vector<triangle>> triangles;
@@ -86,8 +86,8 @@ vector<vector<vertex_3>> face_normals;
 vector<vector<vertex_3>> vertices;
 vector<vector<vertex_3>> vertex_normals;
 
-vertex_3 background_colour(0.0f, 0.0f, 0.0f);
-vertex_3 control_list_colour(0.9f, 0.9f, 0.9f);
+vertex_3 background_colour(1.0f, 1.0f, 1.0f);
+vertex_3 control_list_colour(0.1f, 0.1f, 0.1f);
 
 
 
@@ -222,9 +222,7 @@ void tesselate_field(const vector<float>& values, vector<triangle>& triangle_lis
 				short unsigned int number_of_triangles_generated = tesselate_grid_cube(isovalue, temp_cube, temp_triangle_array);
 
 				for (short unsigned int i = 0; i < number_of_triangles_generated; i++)
-				{
 					triangle_list.push_back(temp_triangle_array[i]);
-				}
 			}
 		}
 	}
@@ -325,9 +323,7 @@ void convert_points_to_triangles(const vector<graviton>& gravitons,
 	tesselate_field(field, triangles, isovalue, grid_min, grid_max, res);
 }
 
-
-
-vertex_3 get_point_on_sphere(float radius)
+vertex_3 get_point_on_sphere(const float radius)
 {
 	double u = rand() / static_cast<double>(RAND_MAX);
 	double v = rand() / static_cast<double>(RAND_MAX);
@@ -350,12 +346,10 @@ void proceed(void)
 
 	// move gravitons
 	for (size_t i = 0; i < gravitons.size(); i++)
-		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * dt;
-
-	size_t scale = 1;
+		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * gravitons[i].vel_multiplier * dt;
 
 	// n oscillators emit n gravitons, once per planck time
-	for (size_t i = 0; i < n/scale; i++)
+	for (size_t i = 0; i < n; i++)
 	{
 		double u = rand() / static_cast<double>(RAND_MAX);
 		double v = rand() / static_cast<double>(RAND_MAX);
@@ -375,12 +369,12 @@ void proceed(void)
 			g.vel.z = -g.vel.z;
 		}
 
-		g.pos.x += 1.0f;
+		g.pos.x += 0.75f;
 
 		gravitons.push_back(g);
 	}
 
-	for (size_t i = 0; i < n/scale; i++)
+	for (size_t i = 0; i < n; i++)
 	{
 		double u = rand() / static_cast<double>(RAND_MAX);
 		double v = rand() / static_cast<double>(RAND_MAX);
@@ -400,27 +394,14 @@ void proceed(void)
 			g.vel.z = -g.vel.z;
 		}
 
-		g.pos.x -= 1.0f;
+		g.pos.x -= 0.75f;
 
 		gravitons.push_back(g);
 	}
 
-	//for (vector<graviton>::const_iterator ci = gravitons.begin(); ci != gravitons.end(); )
-	//{
-	//	const vertex_3 p = ci->pos;
-
-	//	if (p.x < grid_min || p.x > grid_max ||
-	//		p.y < grid_min || p.y > grid_max ||
-	//		p.z < grid_min || p.z > grid_max)
-	//	{
-	//		gravitons.erase(ci);
-	//		ci = gravitons.begin();
-	//	}
-	//	else
-	//		ci++;
-	//}
 
 
+	// Cull gravitons that are outside of the bounding box
 	for (size_t i = 0; i < gravitons.size(); )
 	{
 		const vertex_3 p = gravitons[i].pos;
@@ -432,9 +413,79 @@ void proceed(void)
 			// swap n pop
 			swap(gravitons[i], gravitons[gravitons.size() - 1]);
 			gravitons.pop_back();
-			i = 0;
 		}
 		else
 			i++;
 	}
+
+
+
+	vector<float> field;
+	field.resize(res * res * res, 0);
+
+	const float curr_x_min = grid_min;
+	const float curr_y_min = grid_min;
+	const float curr_z_min = grid_min;
+	const float curr_x_max = grid_max;
+	const float curr_y_max = grid_max;
+	const float curr_z_max = grid_max;
+
+	const float x_extent = curr_x_max - curr_x_min;
+	const float y_extent = curr_y_max - curr_y_min;
+	const float z_extent = curr_z_max - curr_z_min;
+
+	for (size_t i = 0; i < gravitons.size(); i++)
+	{
+		float x_location = gravitons[i].pos.x - curr_x_min;
+		size_t x_index = static_cast<size_t>(static_cast<double>(res) * (x_location / x_extent));
+
+		if (x_index >= res)
+			x_index = res - 1;
+
+		float y_location = gravitons[i].pos.y - curr_y_min;
+		size_t y_index = static_cast<size_t>(static_cast<double>(res) * (y_location / y_extent));
+
+		if (y_index >= res)
+			y_index = res - 1;
+
+		float z_location = gravitons[i].pos.z - curr_z_min;
+		size_t z_index = static_cast<size_t>(static_cast<double>(res) * (z_location / z_extent));
+
+		if (z_index >= res)
+			z_index = res - 1;
+
+		size_t index = z_index * res * res;
+		index += y_index * res;
+		index += x_index;
+
+		field[index] += 1;
+
+		gravitons[i].index = index;
+	}
+
+	float largest = 0;
+	float smallest = numeric_limits<float>::max();
+
+	const float max_gravitons_per_cell = c / lp;
+
+	for (size_t i = 0; i < field.size(); i++)
+	{
+		if (field[i] > max_gravitons_per_cell)
+			field[i] = max_gravitons_per_cell;
+
+		if (field[i] > largest)
+			largest = field[i];
+
+		if (field[i] < smallest)
+			smallest = field[i];
+	}
+
+	for (size_t i = 0; i < field.size(); i++)
+	{
+		if(largest != 0)
+			field[i] /= max_gravitons_per_cell;
+	}
+
+	for (size_t i = 0; i < gravitons.size(); i++)
+		gravitons[i].vel_multiplier = 1.0f - field[gravitons[i].index];
 }

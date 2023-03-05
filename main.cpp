@@ -5,7 +5,7 @@
 
 int main(int argc, char **argv)
 {
-	cout << tp << " " << lp2 << " " << Rs << " " << As << " " << n << endl;
+	//cout << tp << " " << lp2 << " " << Rs << " " << As << " " << n << endl;
 
 	glutInit(&argc, argv);
 	init_opengl(win_x, win_y);
@@ -152,7 +152,6 @@ void draw_objects(void)
 
 	glDisable(GL_LIGHTING);
 
-
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -160,14 +159,14 @@ void draw_objects(void)
 
 	glBegin(GL_POINTS);
 
-	glColor4f(1, 0.5f, 0, 0.5f);
-
 	for (size_t i = 0; i < gravitons.size(); i++)
+	{
+		glColor4f(gravitons[i].vel.length() * gravitons[i].vel_multiplier / c, 0.5f, 1.0f - gravitons[i].vel.length() * gravitons[i].vel_multiplier / c, 1.0f - gravitons[i].vel.length() * gravitons[i].vel_multiplier / c);
 		glVertex3f(-gravitons[i].pos.x, gravitons[i].pos.y, gravitons[i].pos.z);
+	}
 
 	glEnd();
 
-	glDisable(GL_BLEND);
 
 
 
@@ -200,6 +199,8 @@ void draw_objects(void)
 		glEnd();
 	}
 
+	glDisable(GL_BLEND);
+	
 	glPopMatrix();
 }
 
