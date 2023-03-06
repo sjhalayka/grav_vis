@@ -23,14 +23,14 @@ using std::swap;
 
 
 void idle_func(void);
-void init_opengl(const int &width, const int &height);
+void init_opengl(const int& width, const int& height);
 void reshape_func(int width, int height);
 void display_func(void);
 void keyboard_func(unsigned char key, int x, int y);
 void mouse_func(int button, int state, int x, int y);
 void motion_func(int x, int y);
 void passive_motion_func(int x, int y);
-void render_string(int x, const int y, void *font, const string &text);
+void render_string(int x, const int y, void* font, const string& text);
 void draw_objects(void);
 
 class graviton
@@ -81,7 +81,7 @@ const float hbar = 1 / 10.0f;
 const float lp = sqrtf(hbar * G / c3);
 const float lp2 = lp * lp;
 
-const float Mp = sqrt(hbar*c/G);
+const float Mp = sqrt(hbar * c / G);
 const float Mp2 = Mp * Mp;
 
 
@@ -129,7 +129,7 @@ float camera_fov = 45;
 float camera_x_transform = 0;
 float camera_y_transform = 0;
 float u_spacer = 0.01;
-float v_spacer = 0.5*u_spacer;
+float v_spacer = 0.5 * u_spacer;
 float w_spacer = 0.1;
 float camera_near = 0.01;
 float camera_far = 30.0;
@@ -292,6 +292,80 @@ void blur_field(vector<float>& input_field, size_t res)
 
 
 
+
+void get_derivative_from_field(vector<float>& input_field, vector<vertex_3>& output_field, size_t res)
+{
+	output_field.clear();
+	output_field.resize(res * res * res, vertex_3(0, 0, 0));
+
+	for (long long signed int i = 1; i < res - 1; i++)
+	{
+		for (long long signed int j = 1; j < res - 1; j++)
+		{
+			for (long long signed int k = 1; k < res - 1; k++)
+			{
+				vertex_3 deriv;
+
+				size_t iprev = i - 1;
+				size_t inext = i + 1;
+
+				size_t inext_index = k * res * res;
+				inext_index += j * res;
+				inext_index += inext;
+
+				size_t iprev_index = k * res * res;
+				iprev_index += j * res;
+				iprev_index += iprev;
+
+				deriv.x = (input_field[inext] - input_field[iprev]) * 0.5f;
+
+
+
+				size_t jprev = j - 1;
+				size_t jnext = j + 1;
+
+				size_t jnext_index = k * res * res;
+				jnext_index += jnext * res;
+				jnext_index += i;
+
+				size_t jprev_index = k * res * res;
+				jprev_index += jprev * res;
+				jprev_index += i;
+
+				deriv.y = (input_field[jnext] - input_field[jprev]) * 0.5f;
+
+
+
+				size_t kprev = k - 1;
+				size_t knext = k + 1;
+
+				size_t knext_index = knext * res * res;
+				knext_index += j * res;
+				knext_index += i;
+
+				size_t kprev_index = kprev * res * res;
+				kprev_index += j * res;
+				kprev_index += i;
+
+				deriv.z = (input_field[knext] - input_field[kprev]) * 0.5f;
+
+
+
+				size_t index = k * res * res;
+				index += j * res;
+				index += i;
+
+				output_field[index] = deriv;
+
+			}
+		}
+	}
+}
+
+
+
+
+
 void convert_points_to_triangles(const vector<graviton>& gravitons,
 	float isovalue,
 	size_t res,
@@ -369,27 +443,6 @@ void proceed(void)
 
 
 
-	//	 Cull gravitons that are outside of the bounding box
-	for (size_t i = 0; i < gravitons.size(); )
-	{
-		const vertex_3 p = gravitons[i].pos;
-
-		if (p.x < grid_min || p.x > grid_max ||
-			p.y < grid_min || p.y > grid_max ||
-			p.z < grid_min || p.z > grid_max)
-		{
-			// swap n pop
-			swap(gravitons[i], gravitons[gravitons.size() - 1]);
-			gravitons.pop_back();
-		}
-		else
-			i++;
-	}
-
-
-	// move gravitons
-	for (size_t i = 0; i < gravitons.size(); i++)
-		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * gravitons[i].vel_multiplier * dt;
 
 
 	// n oscillators emit n gravitons, once per planck time
@@ -494,6 +547,7 @@ void proceed(void)
 		gravitons[i].index = index;
 	}
 
+	// normalize field
 	const float max_gravitons_per_cell = c / lp;
 
 	for (size_t i = 0; i < field.size(); i++)
@@ -506,7 +560,38 @@ void proceed(void)
 	for (size_t i = 0; i < gravitons.size(); i++)
 		gravitons[i].vel_multiplier = 1.0f - field[gravitons[i].index];
 
+	// scale the field
+	for (size_t i = 0; i < field.size(); i++)
+		field[i] *= 2*c;
 
+	// get derivative
+	vector<vertex_3> derivs;
+	get_derivative_from_field(field, derivs, res);
 
+	// move gravitons
+	for (size_t i = 0; i < gravitons.size(); i++)
+	{
+		gravitons[i].vel = gravitons[i].vel + derivs[gravitons[i].index] * dt;
+		gravitons[i].vel.normalize();
+		gravitons[i].vel = gravitons[i].vel * c;
+		
+		gravitons[i].pos = gravitons[i].pos + gravitons[i].vel * gravitons[i].vel_multiplier * dt;
+	}
 
+	// Cull gravitons that are outside of the bounding box
+	for (size_t i = 0; i < gravitons.size(); )
+	{
+		const vertex_3 p = gravitons[i].pos;
+
+		if (p.x < grid_min || p.x > grid_max ||
+			p.y < grid_min || p.y > grid_max ||
+			p.z < grid_min || p.z > grid_max)
+		{
+			// swap n pop
+			swap(gravitons[i], gravitons[gravitons.size() - 1]);
+			gravitons.pop_back();
+		}
+		else
+			i++;
+	}
 }

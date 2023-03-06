@@ -208,10 +208,6 @@ void draw_objects(void)
 
 	sort(pos_vec.begin(), pos_vec.end());
 
-
-
-
-
 	glPointSize(1.0f);
 
 	glBegin(GL_POINTS);
